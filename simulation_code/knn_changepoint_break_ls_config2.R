@@ -66,6 +66,6 @@ for(rep in 1:nreps_nn){
 output <- data.frame(detect_delays = detect_delays,
                      config_num = config_num)
 
-write.table(output, file=paste("knn_results_break_ls_config_", 
+write.table(output, file=paste("../simulation_output/knn_results_break_ls_config_", 
                                config_num, ".txt", sep=""),
             sep=" ", row.names = F, col.names = F)

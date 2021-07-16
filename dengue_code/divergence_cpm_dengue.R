@@ -6,7 +6,7 @@ library(matrixStats)
 library(gridExtra)
 library(cpm)
 
-dengue_original <- read_csv("dengue_original.csv")
+dengue_original <- read_csv("../dengue_original.csv")
 
 dengue <- dengue_original %>%
   select(SiteNo, Sex, Age, DayDisease, Vomiting, Abdo, Muco, Skin,
@@ -95,5 +95,5 @@ for(arl in c(370, 500, 700, 1000, 2000)){
 }
 
 write.table(cbind(cpm_means, cpm_sds), 
-            file="divergence_cpm_dengue_results.txt",
+            file="../dengue_output/divergence_cpm_dengue_results.txt",
             sep = " ", row.names = F, col.names = F)

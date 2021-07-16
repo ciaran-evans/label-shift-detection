@@ -181,7 +181,7 @@ output <- data.frame(arl = c(lda_arl_means, ulsif_arl_means),
                      ntrain_classifier = ntrain_classifier,
                      thresh = c(lda_cutoff, ulsif_cutoff))
 
-write.table(output, file=paste("lda_ulsif_comparison_", 
+write.table(output, file=paste("../simulation_output/lda_ulsif_comparison_", 
                                ntrain_classifier, "_",
                                sigma_ind, "_",
                                batch_num,

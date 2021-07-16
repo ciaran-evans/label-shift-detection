@@ -4,7 +4,7 @@ library(tidyr)
 library(mgcv)
 library(matrixStats)
 
-dengue_original <- read_csv("dengue_original.csv")
+dengue_original <- read_csv("../dengue_original.csv")
 
 dengue <- dengue_original %>%
   select(SiteNo, Sex, Age, DayDisease, Vomiting, Abdo, Muco, Skin,
@@ -88,5 +88,5 @@ for(rep in 1:nreps){
   print(rep)
 }
 
-write.table(dd_stopping_times, file="dengue_mixture_cusum_gradual_dds_v2.txt",
+write.table(dd_stopping_times, file="../dengue_output/dengue_mixture_cusum_gradual_dds_v2.txt",
             sep = " ", row.names = F, col.names = F)

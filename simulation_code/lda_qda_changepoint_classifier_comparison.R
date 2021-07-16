@@ -192,7 +192,7 @@ output <- data.frame(arl = c(lda_arl_means, qda_arl_means),
                      ntrain_classifier = ntrain_classifier,
                      thresh = c(lda_cutoff, qda_cutoff))
 
-write.table(output, file=paste("lda_qda_comparison_classifier_", 
+write.table(output, file=paste("../simulation_output/lda_qda_comparison_classifier_", 
                                ntrain_classifier, "_",
                                batch_num,
                                ".txt", sep=""),

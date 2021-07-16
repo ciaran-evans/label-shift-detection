@@ -89,7 +89,7 @@ for(config_num in 1:9){
                        cpm_detect = cpm_detect,
                        config_num = config_num)
   
-  write.table(output, file=paste("cpm_changepoint_lda_break_ls_config_", 
+  write.table(output, file=paste("../simulation_output/cpm_changepoint_lda_break_ls_config_", 
                                  config_num, ".txt", sep=""),
               sep=" ", row.names = F, col.names = F)
 }

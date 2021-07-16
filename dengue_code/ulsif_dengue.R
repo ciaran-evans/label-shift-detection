@@ -6,7 +6,7 @@ library(matrixStats)
 library(gridExtra)
 library(densratio)
 
-dengue_original <- read_csv("dengue_original.csv")
+dengue_original <- read_csv("../dengue_original.csv")
 
 dengue <- dengue_original %>%
   select(SiteNo, Sex, Age, DayDisease, Vomiting, Abdo, Muco, Skin,
@@ -111,9 +111,9 @@ for(sim in 1:nsim){
 
 
 write.table(mean_arls, 
-            file="ulsif_dengue_arls.txt",
+            file="../dengue_output/ulsif_dengue_arls.txt",
             sep = " ", row.names = F, col.names = F)
 
 write.table(mean_dds, 
-            file="ulsif_dengue_dds.txt",
+            file="../dengue_output/ulsif_dengue_dds.txt",
             sep = " ", row.names = F, col.names = F)

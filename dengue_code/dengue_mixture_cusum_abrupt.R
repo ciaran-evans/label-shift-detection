@@ -7,7 +7,7 @@ library(matrixStats)
 args <- commandArgs(trailingOnly = TRUE)
 rep = as.numeric(args[1])
 
-dengue_original <- read_csv("dengue_original.csv")
+dengue_original <- read_csv("../dengue_original.csv")
 
 dengue <- dengue_original %>%
   select(SiteNo, Sex, Age, DayDisease, Vomiting, Abdo, Muco, Skin,
@@ -108,11 +108,11 @@ for(cc in 1:length(cs_cutoff_list)){
 }
 
 write.table(arl_stopping_times, file=
-              paste("dengue_mixture_cusum_abrupt_arls_",
+              paste("../dengue_output/dengue_mixture_cusum_abrupt_arls_",
                     rep, ".txt", sep=""),
       sep = " ", row.names = F, col.names = F)
 
 write.table(dd_stopping_times, 
-            paste("dengue_mixture_cusum_abrupt_dds_",
+            paste("../dengue_output/dengue_mixture_cusum_abrupt_dds_",
                   rep, ".txt", sep=""),
             sep = " ", row.names = F, col.names = F)

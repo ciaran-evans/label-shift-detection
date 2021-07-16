@@ -168,7 +168,7 @@ output <- data.frame(dd = c(lda_dd_means, ulsif_dd_means),
                      sigma_ind = sigma_ind,
                      thresh = c(lda_cutoff, ulsif_cutoff))
 
-write.table(output, file=paste("lda_ulsif_ls_break_", 
+write.table(output, file=paste("../simulation_output/lda_ulsif_ls_break_", 
                                mu_ind, "_",
                                sigma_ind, "_",
                                batch_num,
