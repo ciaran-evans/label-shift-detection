@@ -13,24 +13,140 @@ library(gridExtra)
 #############################################################
 
 
+# function for generating data from a mixture of multivariate normals
+generate_raw_data <- function(d, n_obs, p1, mu0, mu1, sig0, sig1){
+  ys <- rbinom(n_obs, 1, p1)
+  xs <- rmvnorm(n_obs, mean=mu1, sigma=sig1)*matrix(rep(ys, d), ncol=d) +
+    rmvnorm(n_obs, mean=mu0, sigma=sig0)*matrix(rep(1-ys, d), ncol=d)
+  new_data <- list(ys = ys, xs=xs)
+  return(new_data)
+}
 
+# likelihood ratio estimate under label shift assumption, 
+# using LDA classifier with estimated means and covariance matrix
+# (see equations (5) and (12) in the paper)
+lda_lr <- function(x, mu0_est, mu1_est, sig_est){
+  return((pi_0*dmvnorm(x, mu1_est, sig_est) + 
+            (1 - pi_0)*dmvnorm(x, mu0_est, sig_est))/(pi_inf*dmvnorm(x, mu1_est, sig_est) + 
+                                                        (1 - pi_inf)*dmvnorm(x, mu0_est, sig_est)))
+}
+
+# likelihood ratio estimate under label shift assumption, 
+# using QDA classifier with estimated means and covariance matrices
+# (see equation (5) in the paper)
+qda_lr <- function(x, mu0_est, mu1_est, sig0_est, sig1_est){
+  return((pi_0*dmvnorm(x, mu1_est, sig1_est) + 
+            (1 - pi_0)*dmvnorm(x, mu0_est, sig0_est))/(pi_inf*dmvnorm(x, mu1_est, sig1_est) + 
+                                                         (1 - pi_inf)*dmvnorm(x, mu0_est, sig0_est)))
+}
+
+d=150 # dimension of the data in Example 3
+pi_inf = 0.4 # pre-change label distribution ( P(Y = 1) )
+pi_0 = 0.7 # post-change label distribution ( P(Y = 1) )
+mu0 = rep(0, d) # mean for class Y = 0
+mu1 = rep(1, d) # mean for class Y = 1
+sig0 = diag(d) # covariance matrix for class Y = 0
+sig1 = matrix(0.1, d, d) # covariance matrix for class Y = 1
+diag(sig1) = 2
+
+# L1 distances for the LDA and QDA likelihood ratio estimates
+lda_l1_dist <- c()
+qda_l1_dist <- c()
+
+set.seed(47) # set a seed for reproducibility
+
+# We consider training sample sizes from 800 to 5000
+# For small samples, LDA should do better than QDA because of
+# the bias--variance trade-off. For larger samples, QDA should do
+# better because the QDA assumptions are satisfied
+for(ntrain_classifier in c(600, 800, 1000, 1500, 2000, 3000, 5000)){
+  
+  # Remember that performance of the detection procedure depends on 
+  # the likelihood ratio estimate, which depends on the training data
+  # To compare average performance, we sample many training samples
+  for(rep in 1:200){
+    classifier_training_data <- generate_raw_data(d, ntrain_classifier, 
+                                                  pi_inf, mu0, mu1, sig0, sig1)
+    y_train_classifier <- classifier_training_data$ys
+    x_train_classifier <- classifier_training_data$xs
+    
+    
+    # LDA estimation
+    mu0_est <- colMeans(x_train_classifier[y_train_classifier == 0,])
+    mu1_est <- colMeans(x_train_classifier[y_train_classifier == 1,])
+    
+    sig_est <- ((sum(y_train_classifier == 1) - 1)*cov(x_train_classifier[y_train_classifier == 1,]) + 
+                  (sum(y_train_classifier == 0) - 1)*cov(x_train_classifier[y_train_classifier == 0,]))/(ntrain_classifier - 1)
+    
+    # QDA estimation
+    # things are the same except we estimate separate covariance matrices
+    sig0_est <- cov(x_train_classifier[y_train_classifier == 0,])
+    sig1_est <- cov(x_train_classifier[y_train_classifier == 1,])
+    
+    # Now generate a new sequence of data to evaluate performance
+    eval_data <- generate_raw_data(d, 2000, 
+                                   pi_inf, mu0, mu1, sig0, sig1)$xs
+    
+    # estimated likelihood ratios on new data, using LDA 
+    lda_lrs <- lda_lr(eval_data, mu0_est, mu1_est, sig_est)
+    
+    # estimated likelihood ratios on new data, using QDA
+    qda_lrs <- qda_lr(eval_data, mu0_est, mu1_est, 
+                      sig0_est, sig1_est)
+    
+    # true likelihood ratios, using true means and covariances
+    true_lrs <- qda_lr(eval_data, mu0, mu1, 
+                       sig0, sig1)
+    
+    # compare estimated likelihood ratios to truth with 
+    # expected l1 distance
+    # Note that the l1 distance is with respect to the
+    # distribution of X
+    lda_l1_dist <- c(lda_l1_dist,
+                     mean(abs(lda_lrs - true_lrs)))
+    qda_l1_dist <- c(qda_l1_dist,
+                     mean(abs(qda_lrs - true_lrs)))
+    
+    # print(paste(ntrain_classifier, rep))
+  }
+}
+
+
+l1_dists <- data.frame(dist = c(lda_l1_dist, qda_l1_dist),
+                       ntrain = rep(rep(c(600, 800, 1000, 1500, 2000, 3000, 5000),
+                                        each = 200), 2),
+                       type = rep(c("LDA", "QDA"), each=1400))
 
 p1 <- l1_dists %>%
-  group_by(type, ntrain) %>%
-  summarize(mean_l1 = mean(dist),
-            sd_l1 = sd(dist)/sqrt(1000)) %>%
-  ggplot(aes(x = ntrain, y = mean_l1, color=type)) +
+  group_by(ntrain, type) %>%
+  summarize(mean_dist = mean(dist), 
+            sd_dist = 2*sd(dist)/sqrt(200)) %>%
+  ggplot(aes(x = ntrain, y = mean_dist, color = type)) +
   geom_line() +
-  geom_errorbar(aes(ymin = mean_l1 - 2*sd_l1, ymax = mean_l1 + 2*sd_l1)) +
+  geom_errorbar(aes(ymin = mean_dist - sd_dist, 
+                    ymax = mean_dist + sd_dist)) +
   theme_bw() +
-  labs(x = "Size of Classifier Training Sample",
-       y = "Expected L1 Distance",
+  labs(x = "Size of Classifier Training Sample", 
+       y = "Expected L1 Distance", 
        color = "")
 
+# Now compare detection delay as a function of sample size
+# These results were generated by 
+# lda_qda_changepoint_classifier_comparison.R
 
-lda_qda_results <- read_delim("~/Dropbox/ciaran_max/full_output.txt", 
-                              " ", escape_double = FALSE, col_names = FALSE, 
-                              trim_ws = TRUE)
+lda_qda_results <- data.frame()
+for(m in c(600, 800, 1000, 1500, 2000, 3000, 5000)){
+  for(i in 1:200){
+    temp <- read_delim(paste("simulation_output/lda_qda_comparison_classifier_",  
+                             m, "_", i, ".txt", sep=""), 
+                       " ", escape_double = FALSE, col_names = FALSE, 
+                       trim_ws = TRUE)
+    lda_qda_results <- lda_qda_results %>%
+      rbind(temp)
+    
+    # print(paste(m, i))
+  }
+}
 
 colnames(lda_qda_results) <- c("arl", "dd", "arl_inf", "dd_inf",
                                "type", "sim_num", "ntrain_classifier",
@@ -50,8 +166,7 @@ res <- lda_qda_results %>%
   mutate(mean_sd = 2*dd_sd/sqrt(count),
          type = ifelse(type == "KDE LDA", "LDA", "QDA"))
 
-p2 <- res %>% 
-  filter(ntrain_classifier > 600) %>%
+p2 <- res %>%
   ggplot(aes(x = ntrain_classifier, y = dd_mean, color=type)) +
   geom_line() +
   geom_errorbar(aes(ymin = dd_mean - mean_sd, ymax = dd_mean + mean_sd)) +
